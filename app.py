@@ -18,12 +18,6 @@ bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
 
-# Google OAuth Setup with Flask-Dance
-google_bp = make_google_blueprint(client_id='YOUR_GOOGLE_CLIENT_ID',  # Replace with your Google Client ID
-                                  client_secret='YOUR_GOOGLE_CLIENT_SECRET',  # Replace with your Google Client Secret
-                                  redirect_to='google_authorized')
-app.register_blueprint(google_bp, url_prefix='/google_login')
-
 # User Model
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
@@ -74,30 +68,6 @@ def login():
     else:
         flash("Invalid Credentials", "danger")
     return redirect(url_for('home'))
-
-# Google OAuth Route
-@app.route('/google-authorized')
-def google_authorized():
-    if not google.authorized:
-        flash("Google login failed", "danger")
-        return redirect(url_for("home"))
-
-    # Get user info from Google
-    google_info = google.get('/plus/v1/people/me')
-    user_data = google_info.json()
-    email = user_data['emails'][0]['value']
-    name = user_data['displayName']
-
-    # Check if user exists in the database
-    user = User.query.filter_by(email=email).first()
-    if not user:
-        user = User(name=name, email=email, username=email.split('@')[0], password="Google_OAuth")
-        db.session.add(user)
-        db.session.commit()
-
-    login_user(user)
-    flash("Google Login Successful!", "success")
-    return redirect(url_for("dashboard"))
 
 # Dashboard Route
 @app.route('/dashboard')
